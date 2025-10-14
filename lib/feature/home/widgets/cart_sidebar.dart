@@ -45,7 +45,6 @@ class CartSidebar extends StatelessWidget {
                   ],
                 ),
               ),
-              const Divider(height: 1),
               
               // Cart Items
               Expanded(
