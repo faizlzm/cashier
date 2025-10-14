@@ -215,7 +215,6 @@ class CashierViewModel extends ChangeNotifier {
   }
 
   void processPayment() {
-    // Implementasi logika pembayaran
     print('Processing payment for total: Rp. ${totalPrice.toStringAsFixed(0)}');
     clearCart();
   }

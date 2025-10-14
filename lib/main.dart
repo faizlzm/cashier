@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'feature/home/cashier_screen.dart';
 
 void main() {

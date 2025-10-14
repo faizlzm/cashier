@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../cashier_viewmodel.dart';
 import '../models/product_model.dart';
+import '../utils/responsive_util.dart';
 
 class ProductGrid extends StatelessWidget {
   const ProductGrid({Key? key}) : super(key: key);
@@ -12,92 +13,51 @@ class ProductGrid extends StatelessWidget {
     return Consumer<CashierViewModel>(
       builder: (context, viewModel, child) {
         final products = viewModel.filteredProducts;
+        final crossAxisCount = ResponsiveUtils.getGridCrossAxisCount(context);
+        final isMobile = ResponsiveUtils.isMobile(context);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header dengan jumlah produk dan Filter Chips
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 12 : 20,
+                vertical: 5,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Jumlah Produk
-                  Text(
-                    '${products.length} Produk Ditemukan',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[700],
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterChip(
+                          context,
+                          'SEMUA',
+                          viewModel.selectedCategory == 'SEMUA',
+                          () => viewModel.setCategory('SEMUA'),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildFilterChip(
+                          context,
+                          'MAKANAN',
+                          viewModel.selectedCategory == 'MAKANAN',
+                          () => viewModel.setCategory('MAKANAN'),
+                        ),
+                        const SizedBox(width: 10),
+                        _buildFilterChip(
+                          context,
+                          'MINUMAN',
+                          viewModel.selectedCategory == 'MINUMAN',
+                          () => viewModel.setCategory('MINUMAN'),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Filter Chips untuk Kategori
-                  Wrap(
-                    spacing: 10,
-                    children: [
-                      FilterChip(
-                        label: const Text('SEMUA'),
-                        selected: viewModel.selectedCategory == 'SEMUA',
-                        onSelected: (_) {
-                          viewModel.setCategory('SEMUA');
-                        },
-                        backgroundColor: Colors.grey[200],
-                        selectedColor: const Color(0xFFFF6B35),
-                        labelStyle: TextStyle(
-                          color: viewModel.selectedCategory == 'SEMUA'
-                              ? Colors.white
-                              : Colors.black87,
-                          fontWeight: viewModel.selectedCategory == 'SEMUA'
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                        checkmarkColor: Colors.white,
-                      ),
-                      FilterChip(
-                        label: const Text('MAKANAN'),
-                        selected: viewModel.selectedCategory == 'MAKANAN',
-                        onSelected: (_) {
-                          viewModel.setCategory('MAKANAN');
-                        },
-                        backgroundColor: Colors.grey[200],
-                        selectedColor: const Color(0xFFFF6B35),
-                        labelStyle: TextStyle(
-                          color: viewModel.selectedCategory == 'MAKANAN'
-                              ? Colors.white
-                              : Colors.black87,
-                          fontWeight: viewModel.selectedCategory == 'MAKANAN'
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                        checkmarkColor: Colors.white,
-                      ),
-                      FilterChip(
-                        label: const Text('MINUMAN'),
-                        selected: viewModel.selectedCategory == 'MINUMAN',
-                        onSelected: (_) {
-                          viewModel.setCategory('MINUMAN');
-                        },
-                        backgroundColor: Colors.grey[200],
-                        selectedColor: const Color(0xFFFF6B35),
-                        labelStyle: TextStyle(
-                          color: viewModel.selectedCategory == 'MINUMAN'
-                              ? Colors.white
-                              : Colors.black87,
-                          fontWeight: viewModel.selectedCategory == 'MINUMAN'
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                        ),
-                        checkmarkColor: Colors.white,
-                      ),
-                    ],
                   ),
                 ],
               ),
             ),
 
-            // Grid Produk
             Expanded(
               child: products.isEmpty
                   ? Center(
@@ -121,12 +81,15 @@ class ProductGrid extends StatelessWidget {
                       ),
                     )
                   : GridView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 6,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 12 : 20,
+                        vertical: 10,
+                      ),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
                         childAspectRatio: 0.75,
-                        crossAxisSpacing: 15,
-                        mainAxisSpacing: 15,
+                        crossAxisSpacing: isMobile ? 10 : 15,
+                        mainAxisSpacing: isMobile ? 10 : 15,
                       ),
                       itemCount: products.length,
                       itemBuilder: (context, index) {
@@ -139,6 +102,26 @@ class ProductGrid extends StatelessWidget {
       },
     );
   }
+
+  Widget _buildFilterChip(
+    BuildContext context,
+    String label,
+    bool isSelected,
+    VoidCallback onSelected) {
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (_) => onSelected(),
+      backgroundColor: Colors.grey[200],
+      selectedColor: const Color(0xFFFF6B35),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: ResponsiveUtils.isMobile(context) ? 10 : 12,
+      ),
+      checkmarkColor: Colors.white,
+    );
+  }
 }
 
 class ProductCard extends StatelessWidget {
@@ -148,7 +131,8 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tentukan icon berdasarkan kategori
+    final isMobile = ResponsiveUtils.isMobile(context);
+
     IconData productIcon = product.category == 'MAKANAN'
         ? Icons.restaurant
         : Icons.local_drink;
@@ -160,18 +144,35 @@ class ProductCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         context.read<CashierViewModel>().addToCart(product);
+
+        if (isMobile) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('${product.name} ditambahkan ke keranjang'),
+              duration: const Duration(seconds: 1),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
               child: Container(
-                margin: const EdgeInsets.all(15),
+                margin: EdgeInsets.all(isMobile ? 10 : 15),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(8),
                   color: Colors.grey[100],
@@ -179,30 +180,32 @@ class ProductCard extends StatelessWidget {
                 child: Center(
                   child: Icon(
                     productIcon,
-                    size: 50,
+                    size: isMobile ? 35 : 50,
                     color: iconColor,
                   ),
                 ),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12),
               child: Text(
                 product.name,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  fontSize: 14,
+                  fontSize: isMobile ? 12 : 14,
                 ),
                 textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(isMobile ? 8 : 12),
               child: Text(
                 'Rp. ${product.price.toStringAsFixed(0)}',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.grey,
-                  fontSize: 13,
+                  fontSize: isMobile ? 11 : 13,
                 ),
               ),
             ),

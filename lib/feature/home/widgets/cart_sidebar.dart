@@ -3,22 +3,38 @@ import 'package:provider/provider.dart';
 
 import '../cashier_viewmodel.dart';
 import '../models/cart_item_model.dart';
+import '../utils/responsive_util.dart';
 
 class CartSidebar extends StatelessWidget {
-  const CartSidebar({Key? key}) : super(key: key);
+  final ScrollController? scrollController;
+
+  const CartSidebar({Key? key, this.scrollController}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final cartWidth = ResponsiveUtils.getCartWidth(context);
+    final isMobile = ResponsiveUtils.isMobile(context);
+
     return Consumer<CashierViewModel>(
       builder: (context, viewModel, child) {
         return Container(
-          width: 380,
+          width: isMobile ? double.infinity : cartWidth,
           color: Colors.white,
           child: Column(
             children: [
-              // Header
+              if (isMobile)
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: EdgeInsets.all(isMobile ? 16 : 20),
                 child: Row(
                   children: [
                     Container(
@@ -27,33 +43,38 @@ class CartSidebar extends StatelessWidget {
                         color: const Color(0xFFFF6B35),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.receipt_long, color: Colors.white),
+                      child: Icon(
+                        Icons.receipt_long,
+                        color: Colors.white,
+                        size: isMobile ? 20 : 24,
+                      ),
                     ),
                     const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Order Menu',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Order Menu',
+                            style: TextStyle(
+                              fontSize: isMobile ? 16 : 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
-              
-              // Cart Items
+
               Expanded(
                 child: viewModel.cartItems.isEmpty
                     ? Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.shopping_cart_outlined, 
+                            Icon(Icons.shopping_cart_outlined,
                                 size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
                             Text(
@@ -64,6 +85,7 @@ class CartSidebar extends StatelessWidget {
                         ),
                       )
                     : ListView.builder(
+                        controller: scrollController,
                         padding: const EdgeInsets.all(16),
                         itemCount: viewModel.cartItems.length,
                         itemBuilder: (context, index) {
@@ -73,64 +95,77 @@ class CartSidebar extends StatelessWidget {
                         },
                       ),
               ),
-              
-              // Footer dengan Total
+
               Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B35),
-                  borderRadius: const BorderRadius.only(
+                padding: EdgeInsets.all(isMobile ? 16 : 20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFF6B35),
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(20),
                     topRight: Radius.circular(20),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${viewModel.cartItemCount} items',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${viewModel.cartItemCount} items',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isMobile ? 12 : 14,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'Rp. ${viewModel.totalPrice.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                          Text(
+                            'Rp. ${viewModel.totalPrice.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isMobile ? 20 : 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton(
-                        onPressed: viewModel.cartItems.isEmpty 
-                            ? null 
-                            : () => viewModel.processPayment(),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFFFF6B35),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: viewModel.cartItems.isEmpty
+                              ? null
+                              : () {
+                                  viewModel.processPayment();
+                                  if (isMobile) {
+                                    Navigator.pop(context);
+                                  }
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Pembayaran berhasil diproses!'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: const Color(0xFFFF6B35),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
-                        ),
-                        child: const Text(
-                          'Proses Pembayaran',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                          child: Text(
+                            'Proses Pembayaran',
+                            style: TextStyle(
+                              fontSize: isMobile ? 14 : 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -148,21 +183,22 @@ class CartItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tentukan icon berdasarkan kategori
-    IconData productIcon = cartItem.product.category == 'MAKANAN' 
-        ? Icons.restaurant 
+    final isMobile = ResponsiveUtils.isMobile(context);
+
+    IconData productIcon = cartItem.product.category == 'MAKANAN'
+        ? Icons.restaurant
         : Icons.local_drink;
-    
+
     Color iconColor = cartItem.product.category == 'MAKANAN'
         ? Colors.orange[300]!
         : Colors.brown[300]!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isMobile ? 10 : 12),
       decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: const Color(0xFFFF6B35), width: 4),
+        border: const Border(
+          left: BorderSide(color: Color(0xFFFF6B35), width: 4),
         ),
         color: Colors.grey[50],
         borderRadius: BorderRadius.circular(8),
@@ -170,13 +206,17 @@ class CartItemWidget extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: isMobile ? 40 : 50,
+            height: isMobile ? 40 : 50,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
               color: Colors.grey[200],
             ),
-            child: Icon(productIcon, color: iconColor),
+            child: Icon(
+              productIcon,
+              color: iconColor,
+              size: isMobile ? 20 : 24,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -185,79 +225,28 @@ class CartItemWidget extends StatelessWidget {
               children: [
                 Text(
                   cartItem.product.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: isMobile ? 13 : 14,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Rp. ${cartItem.product.price.toStringAsFixed(0)}',
+                  '${cartItem.quantity} x Rp. ${cartItem.product.price.toStringAsFixed(0)} = Rp. ${(cartItem.quantity * cartItem.product.price).toStringAsFixed(0)}',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: isMobile ? 11 : 12,
                     color: Colors.grey[600],
                   ),
                 ),
-                if (cartItem.product.description != null)
-                  Text(
-                    cartItem.product.description!,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[500],
-                    ),
-                  ),
               ],
             ),
           ),
-          Row(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B35),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.remove, size: 16),
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  onPressed: () {
-                    context.read<CashierViewModel>()
-                        .decreaseQuantity(cartItem.product.id);
-                  },
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Text(
-                  '${cartItem.quantity}',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFF6B35),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.add, size: 16),
-                  color: Colors.white,
-                  padding: const EdgeInsets.all(4),
-                  constraints: const BoxConstraints(),
-                  onPressed: () {
-                    context.read<CashierViewModel>()
-                        .increaseQuantity(cartItem.product.id);
-                  },
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            icon: Icon(
+              Icons.delete_outline,
+              color: Colors.red,
+              size: isMobile ? 20 : 24,
+            ),
             onPressed: () {
               context.read<CashierViewModel>()
                   .removeFromCart(cartItem.product.id);
