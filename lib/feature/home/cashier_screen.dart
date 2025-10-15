@@ -1,3 +1,4 @@
+import 'package:cashier/feature/home/utils/currency_formatter.dart';
 import 'package:cashier/feature/home/utils/responsive_util.dart';
 import 'package:cashier/feature/home/widgets/app_header.dart';
 import 'package:cashier/feature/home/widgets/cart_sidebar.dart';
@@ -117,7 +118,7 @@ class _MobileLayout extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              'Rp. ${viewModel.totalPrice.toStringAsFixed(0)}',
+                              CurrencyFormatter.format(viewModel.totalPrice),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

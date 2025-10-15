@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../cashier_viewmodel.dart';
 import '../models/product_model.dart';
+import '../utils/currency_formatter.dart';
 import '../utils/responsive_util.dart';
 
 class ProductGrid extends StatelessWidget {
@@ -13,7 +13,6 @@ class ProductGrid extends StatelessWidget {
     return Consumer<CashierViewModel>(
       builder: (context, viewModel, child) {
         final products = viewModel.filteredProducts;
-        final crossAxisCount = ResponsiveUtils.getGridCrossAxisCount(context);
         final isMobile = ResponsiveUtils.isMobile(context);
 
         return Column(
@@ -57,7 +56,6 @@ class ProductGrid extends StatelessWidget {
                 ],
               ),
             ),
-
             Expanded(
               child: products.isEmpty
                   ? Center(
@@ -80,16 +78,10 @@ class ProductGrid extends StatelessWidget {
                         ],
                       ),
                     )
-                  : GridView.builder(
+                  : ListView.builder(
                       padding: EdgeInsets.symmetric(
                         horizontal: isMobile ? 12 : 20,
                         vertical: 10,
-                      ),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: crossAxisCount,
-                        childAspectRatio: 0.75,
-                        crossAxisSpacing: isMobile ? 10 : 15,
-                        mainAxisSpacing: isMobile ? 10 : 15,
                       ),
                       itemCount: products.length,
                       itemBuilder: (context, index) {
@@ -129,84 +121,89 @@ class ProductCard extends StatelessWidget {
 
   const ProductCard({Key? key, required this.product}) : super(key: key);
 
+  String _getInitials(String name) {
+    final words = name.split(' ');
+    if (words.length >= 2) {
+      return '${words[0][0]}${words[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
+    final initials = _getInitials(product.name);
 
-    IconData productIcon = product.category == 'MAKANAN'
-        ? Icons.restaurant
-        : Icons.local_drink;
-
-    Color iconColor = product.category == 'MAKANAN'
-        ? Colors.orange[300]!
-        : Colors.brown[300]!;
-
-    return GestureDetector(
+    return InkWell(
       onTap: () {
         context.read<CashierViewModel>().addToCart(product);
-
-        if (isMobile) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('${product.name} ditambahkan ke keranjang'),
-              duration: const Duration(seconds: 1),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} ditambahkan ke keranjang'),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       },
       child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12 : 16,
+          vertical: isMobile ? 12 : 14,
+        ),
+        margin: const EdgeInsets.only(bottom: 4),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+          border: Border(
+            bottom: BorderSide(
+              color: Colors.grey[200]!,
+              width: 1,
             ),
-          ],
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        child: Row(
           children: [
-            Expanded(
-              child: Container(
-                margin: EdgeInsets.all(isMobile ? 10 : 15),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  color: Colors.grey[100],
-                ),
-                child: Center(
-                  child: Icon(
-                    productIcon,
-                    size: isMobile ? 35 : 50,
-                    color: iconColor,
+            // Avatar with Initials
+            Container(
+              width: isMobile ? 50 : 60,
+              height: isMobile ? 50 : 60,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  initials,
+                  style: TextStyle(
+                    fontSize: isMobile ? 18 : 22,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700],
                   ),
                 ),
               ),
             ),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: isMobile ? 8 : 12),
-              child: Text(
-                product.name,
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: isMobile ? 12 : 14,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(isMobile ? 8 : 12),
-              child: Text(
-                'Rp. ${product.price.toStringAsFixed(0)}',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: isMobile ? 11 : 13,
-                ),
+            const SizedBox(width: 16),
+            // Product Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    style: TextStyle(
+                      fontSize: isMobile ? 15 : 17,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    CurrencyFormatter.format(product.price),
+                    style: TextStyle(
+                      fontSize: isMobile ? 13 : 14,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

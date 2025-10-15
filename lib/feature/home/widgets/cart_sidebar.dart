@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../cashier_viewmodel.dart';
 import '../models/cart_item_model.dart';
+import '../utils/currency_formatter.dart';
 import '../utils/responsive_util.dart';
 
 class CartSidebar extends StatelessWidget {
@@ -32,7 +32,6 @@ class CartSidebar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-
               Container(
                 padding: EdgeInsets.all(isMobile ? 16 : 20),
                 child: Row(
@@ -67,7 +66,6 @@ class CartSidebar extends StatelessWidget {
                   ],
                 ),
               ),
-
               Expanded(
                 child: viewModel.cartItems.isEmpty
                     ? Center(
@@ -95,76 +93,82 @@ class CartSidebar extends StatelessWidget {
                         },
                       ),
               ),
-
               Container(
                 padding: EdgeInsets.all(isMobile ? 16 : 20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF6B35),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
                 child: SafeArea(
                   top: false,
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${viewModel.cartItemCount} items',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 12 : 14,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: viewModel.cartItems.isEmpty
+                          ? null
+                          : () {
+                              viewModel.processPayment();
+                              if (isMobile) {
+                                Navigator.pop(context);
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Pembayaran berhasil diproses!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            },
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 16 : 20,
+                          vertical: isMobile ? 14 : 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: viewModel.cartItems.isEmpty
+                              ? Colors.grey[300]
+                              : const Color(0xFFFF6B35),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.shopping_cart,
+                              color: viewModel.cartItems.isEmpty
+                                  ? Colors.grey[500]
+                                  : Colors.white,
+                              size: isMobile ? 20 : 24,
                             ),
-                          ),
-                          Text(
-                            'Rp. ${viewModel.totalPrice.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isMobile ? 20 : 24,
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(width: 12),
+                            Text(
+                              '${viewModel.cartItemCount} Items',
+                              style: TextStyle(
+                                color: viewModel.cartItems.isEmpty
+                                    ? Colors.grey[600]
+                                    : Colors.white,
+                                fontSize: isMobile ? 14 : 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: viewModel.cartItems.isEmpty
-                              ? null
-                              : () {
-                                  viewModel.processPayment();
-                                  if (isMobile) {
-                                    Navigator.pop(context);
-                                  }
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Pembayaran berhasil diproses!'),
-                                      backgroundColor: Colors.green,
-                                    ),
-                                  );
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFFFF6B35),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                            const Spacer(),
+                            Text(
+                              CurrencyFormatter.format(viewModel.totalPrice),
+                              style: TextStyle(
+                                color: viewModel.cartItems.isEmpty
+                                    ? Colors.grey[600]
+                                    : Colors.white,
+                                fontSize: isMobile ? 16 : 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            'Proses Pembayaran',
-                            style: TextStyle(
-                              fontSize: isMobile ? 14 : 16,
-                              fontWeight: FontWeight.bold,
+                            const SizedBox(width: 8),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: viewModel.cartItems.isEmpty
+                                  ? Colors.grey[500]
+                                  : Colors.white,
+                              size: isMobile ? 16 : 18,
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -181,17 +185,18 @@ class CartItemWidget extends StatelessWidget {
 
   const CartItemWidget({Key? key, required this.cartItem}) : super(key: key);
 
+  String _getInitials(String name) {
+    final words = name.split(' ');
+    if (words.length >= 2) {
+      return '${words[0][0]}${words[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveUtils.isMobile(context);
-
-    IconData productIcon = cartItem.product.category == 'MAKANAN'
-        ? Icons.restaurant
-        : Icons.local_drink;
-
-    Color iconColor = cartItem.product.category == 'MAKANAN'
-        ? Colors.orange[300]!
-        : Colors.brown[300]!;
+    final initials = _getInitials(cartItem.product.name);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -205,17 +210,23 @@ class CartItemWidget extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Avatar with Initials
           Container(
             width: isMobile ? 40 : 50,
             height: isMobile ? 40 : 50,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: Colors.grey[200],
+              color: Colors.grey[300],
             ),
-            child: Icon(
-              productIcon,
-              color: iconColor,
-              size: isMobile ? 20 : 24,
+            child: Center(
+              child: Text(
+                initials,
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -232,7 +243,7 @@ class CartItemWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${cartItem.quantity} x Rp. ${cartItem.product.price.toStringAsFixed(0)} = Rp. ${(cartItem.quantity * cartItem.product.price).toStringAsFixed(0)}',
+                  '${cartItem.quantity} x ${CurrencyFormatter.format(cartItem.product.price)} = ${CurrencyFormatter.format(cartItem.quantity * cartItem.product.price)}',
                   style: TextStyle(
                     fontSize: isMobile ? 11 : 12,
                     color: Colors.grey[600],
